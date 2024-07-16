@@ -1,16 +1,26 @@
-# This is a sample Python script.
+import airsim
+import time
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# Connect to the AirSim simulator
+client = airsim.MultirotorClient()
+client.confirmConnection()
+client.enableApiControl(True)
+client.armDisarm(True)
 
+# Takeoff
+client.takeoffAsync().join()
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+# Fly in a square path
+side_length = 10
+for i in range(4):
+    client.moveToPositionAsync(side_length, 0, -10, 5).join()
+    client.rotateByYawRateAsync(90, 1).join()
 
+# Land
+client.landAsync().join()
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+# Disable API control and disarm
+client.armDisarm(False)
+client.enableApiControl(False)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+print("Script finished!")
