@@ -1,0 +1,28 @@
+This directory version focuses on creating a base model to train the drone to reach a target
+
+Currently the drone is trying to reach a target immedieately in front of it
+([10, 5, -10])   10 steps forward, 5 to the right, and 10 high
+
+the drone is reamining on the street by limiting its movement in the x direction (left-toright)
+street_x_min = -10
+street_x_max = 10
+
+
+Using a dqn network to train it:
+model = DQN(
+    'CnnPolicy',
+    env,
+    learning_rate=0.0001,
+    buffer_size=10000,
+    learning_starts=1000,
+    batch_size=32,
+    tau=0.1,
+    gamma=0.99,
+    train_freq=4,
+    target_update_interval=1000,
+    exploration_fraction=0.1,
+    exploration_final_eps=0.02,
+    verbose=1
+)
+
+
