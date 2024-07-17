@@ -102,8 +102,7 @@ class AirSimDroneEnv(gym.Env):
         # Define street boundaries (these values need to be adjusted to fit your environment)
         street_x_min = -10
         street_x_max = 10
-        street_y_min = -10
-        street_y_max = 10
+
 
         if street_x_min <= position.x_val <= street_x_max and street_y_min <= position.y_val <= street_y_max:
             return True
