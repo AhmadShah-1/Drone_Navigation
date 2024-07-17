@@ -1,1 +1,11 @@
 Using segmentation data provided by Airsim, give the agent a reward for staying within the boudnaries of the road
+
+An Object iD with a specified color has been assigned to ground
+The center pixel of the bottom camera is used to detect the color of the ground below it
+and checks if its still on the street or not
+
+
+
+
+Not completed (Currently using color to get segemntation data (have to find api call for segmentation))
+

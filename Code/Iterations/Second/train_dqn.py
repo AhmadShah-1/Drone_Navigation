@@ -5,6 +5,7 @@ import gymnasium as gym
 from drone_env import AirSimDroneEnv
 from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
+import time
 
 # Create and check the custom environment
 env = AirSimDroneEnv(ip_address="127.0.0.1")
@@ -27,8 +28,34 @@ model = DQN(
     verbose=1
 )
 
-# Train the model
-model.learn(total_timesteps=1000)
+# Train the model with a smaller number of timesteps to estimate time
+'''
+test_timesteps = 1
+obs, _ = env.reset()
+start_time = time.time()
+
+for _ in range(test_timesteps):
+    action, _states = model.predict(obs)
+    action = int(action)  # Ensure action is an integer
+    obs, reward, done, truncated, info = env.step(action)
+    # env.render()  # Call the render method to display the bottom camera feed
+
+    # Print debugging information
+    if done:
+        print(f"Episode finished due to: {info.get('done_reason')}")
+        obs, _ = env.reset()
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+
+# Estimate time for 1000 timesteps
+estimated_time_1000_timesteps = (elapsed_time / test_timesteps) * 1000
+print(f"Time for {test_timesteps} timesteps: {elapsed_time} seconds")
+print(f"Estimated time for 1000 timesteps: {estimated_time_1000_timesteps} seconds")
+'''
+
+# Train the model for 1000 timesteps
+model.learn(total_timesteps=600)
 
 # Save the model
-model.save("C:/Users/alex1/Desktop/Ahmad_Stuff/Drone_Navigation/Code/Iterations/First/dqn_airsim_drone1")
+model.save("C:/Users/alex1/Desktop/Ahmad_Stuff/Drone_Navigation/Code/Iterations/Second/Models/dqn_airsim_drone2")

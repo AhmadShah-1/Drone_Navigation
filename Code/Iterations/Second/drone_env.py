@@ -4,6 +4,7 @@ import gymnasium as gym
 from gymnasium import spaces
 from PIL import Image
 import time
+import cv2
 
 
 class AirSimDroneEnv(gym.Env):
@@ -21,10 +22,23 @@ class AirSimDroneEnv(gym.Env):
         self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 3), dtype=np.uint8)
 
         self.image_request = airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True)
-        self.segmentation_request = airsim.ImageRequest("0", airsim.ImageType.Segmentation, False, False)
-        self.target_position = np.array([0, 0, -10])  # Set your target position
+        self.segmentation_request = airsim.ImageRequest("bottom_center", airsim.ImageType.Segmentation, False, False)
+        self.bottom_camera_request = airsim.ImageRequest("bottom_center", airsim.ImageType.Scene, False, False)
+        self.target_position = np.array([30, 3, -10])  # Set your target position
 
-        self.max_duration = 60  # Maximum duration of each episode in seconds
+        self.max_duration = 80  # Maximum duration of each episode in seconds
+
+        # Object ID was not being identified correctly by the bottom camera, however it kept outputting 106, possibly referring to the color
+        # of the road, so the number 106 will be compared to the bottom camera output and if True will mean the drone is over the road
+        '''
+        # Set object ID for the road (ground)
+        self.road_object_id = 42  # Set this to an appropriate ID for the road
+        self.client.simSetSegmentationObjectID("Road", self.road_object_id)
+        self.client.simSetSegmentationObjectID("road[\w]*", self.road_object_id, True)
+        self.client.simSetSegmentationObjectID("Road[\w]*", self.road_object_id, True)
+        self.client.simSetSegmentationObjectID("Road_[\w]*", self.road_object_id, True)
+        '''
+        self.ground_not_detected_start = None  # To track when ground is not detected
 
     def reset(self, seed=None, options=None):
         if seed is not None:
@@ -34,9 +48,11 @@ class AirSimDroneEnv(gym.Env):
         self.client.armDisarm(True)
         self.client.takeoffAsync().join()
         self.start_time = time.time()  # Initialize the timer
+        self.ground_not_detected_start = None  # Reset ground not detected timer
         return self._get_obs(), {}
 
     def step(self, action):
+        action = int(action)  # Convert action to integer if it is not
         quad_offset = {
             0: (1, 0, 0),  # forward
             1: (-1, 0, 0),  # backward
@@ -51,9 +67,9 @@ class AirSimDroneEnv(gym.Env):
 
         obs = self._get_obs()
         reward = self._compute_reward()
-        done = self._is_done()
+        done, reason = self._is_done()
 
-        info = {}
+        info = {"done_reason": reason}
         return obs, reward, done, False, info
 
     def _get_obs(self):
@@ -76,9 +92,17 @@ class AirSimDroneEnv(gym.Env):
         if collision:
             reward -= 100  # Large penalty for collisions
 
-        # Penalize for being off the street
-        if not self._is_on_street():
-            reward -= 10  # Adjust penalty value as needed
+        # Penalize if the ground is not detected for over 1 second
+        if not self._is_on_road():
+            if self.ground_not_detected_start is None:
+                self.ground_not_detected_start = time.time()
+                print("Detecting Ground")
+            elif time.time() - self.ground_not_detected_start > 1:
+                print("Ground not detected")
+                reward -= 10  # Penalty for not detecting the ground for over 1 second
+        else:
+            print("Ground Detected")
+            self.ground_not_detected_start = None  # Reset timer if ground is detected
 
         # Penalize for flying too high
         max_altitude = 15  # Define the maximum altitude
@@ -95,20 +119,43 @@ class AirSimDroneEnv(gym.Env):
         elapsed_time = time.time() - self.start_time  # Calculate elapsed time
 
         # Check if time limit has been exceeded
-        if collision or distance_to_target < 1 or elapsed_time > self.max_duration:
-            return True
-        return False
+        if collision:
+            return True, "collision"
+        if distance_to_target < 1:
+            return True, "reached_target"
+        if elapsed_time > self.max_duration:
+            return True, "time_exceeded"
+        return False, "none"
 
-    def _is_on_street(self):
+    def _is_on_road(self):
         responses = self.client.simGetImages([self.segmentation_request])
         response = responses[0]
         img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8)
         img2d = img1d.reshape(response.height, response.width, 3)
 
-        # Check if the central part of the image is the road color
-        road_color = [128, 64, 128]  # Example color for the road, this may vary
+        # Check if the center pixel of the bottom_center camera matches the road object ID
         center_pixel = img2d[response.height // 2, response.width // 2]
+        print(center_pixel)
+        return center_pixel[0] == 106
 
-        if np.array_equal(center_pixel, road_color):
-            return True
-        return False
+    def render(self, mode='human'):
+        # Get the bottom camera feed
+        responses = self.client.simGetImages([self.bottom_camera_request])
+        response = responses[0]
+        img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8)
+        img_rgb = img1d.reshape(response.height, response.width, 3)
+        img_rgb = np.flipud(img_rgb)
+
+        # Display the image using OpenCV
+        cv2.imshow("Bottom Camera Feed", img_rgb)
+        cv2.waitKey(1)
+
+'''
+# Additional code to ensure the drone takes off and shows the live feed
+if __name__ == "__main__":
+    env = AirSimDroneEnv(ip_address="127.0.0.1")
+    env.client.moveToPositionAsync(0, 0, -10, 5).join()
+    while True:
+        env.render()
+
+'''
