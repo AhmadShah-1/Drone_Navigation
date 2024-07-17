@@ -1,0 +1,52 @@
+'CnnPolicy':
+Explanation: Specifies the policy network architecture to use. In this case, 'CnnPolicy' indicates that a Convolutional Neural Network
+(CNN) policy is being used, which is suitable for processing image input.
+
+env:
+Explanation: This is the environment in which the agent will be trained. It should be an instance of a gym environment that the agent
+interacts with to learn.
+
+policy_kwargs:
+Explanation: Additional keyword arguments to pass to the policy network. In this case, it includes the custom CNN architecture.
+
+learning_rate (0.0001):
+Explanation: The step size for updating the model parameters. A smaller learning rate ensures more stable learning but may take longer
+to converge.
+
+buffer_size (50000):
+Explanation: The size of the replay buffer, which stores the experiences the agent has observed. A larger buffer can store more past
+experiences for the agent to learn from.
+
+learning_starts (1000):
+Explanation: The number of steps to take in the environment before the learning starts. This allows the replay buffer to fill up with
+some experiences before the model starts updating.
+
+batch_size (64):
+Explanation: The number of samples to draw from the replay buffer for each update. Larger batch sizes can lead to more stable updates
+but require more memory.
+
+tau (0.1):
+Explanation: The soft update coefficient for updating the target network. It controls how much the target network is updated towards
+the primary network at each step.
+
+gamma (0.99):
+Explanation: The discount factor for future rewards. A value close to 1.0 considers long-term rewards, while a value closer to 0
+focuses on short-term rewards.
+
+train_freq (4):
+Explanation: The frequency of training steps relative to environment steps. For every 4 environment steps, a training step is performed.
+
+target_update_interval (1000):
+Explanation: The number of steps after which the target network is updated. Less frequent updates can stabilize training.
+
+exploration_fraction (0.1):
+Explanation: The fraction of the total training timesteps over which the exploration rate is annealed. This determines how quickly
+the agent moves from exploration to exploitation.
+
+exploration_final_eps (0.02):
+Explanation: The final value of the exploration rate after the exploration_fraction of timesteps. A lower value means less random
+action taking towards the end of training.
+
+verbose (1):
+Explanation: The verbosity level of the output during training. Setting it to 1 means that information about the training process
+will be printed to the console. Higher values provide more detailed logging.

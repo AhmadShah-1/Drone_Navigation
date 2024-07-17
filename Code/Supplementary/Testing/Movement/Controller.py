@@ -12,7 +12,7 @@ client.armDisarm(True)
 
 # Take off and move up
 client.takeoffAsync().join()
-client.moveToPositionAsync(4, 10, -10, 5).join()
+client.moveToPositionAsync(100, 1, -10, 5).join()
 
 # Set object ID for the street (ground)
 street_object_id = 42  # This should be the ID for the ground

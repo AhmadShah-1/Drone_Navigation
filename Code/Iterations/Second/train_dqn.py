@@ -15,16 +15,16 @@ check_env(env)
 model = DQN(
     'CnnPolicy',
     env,
-    learning_rate=0.0001,
+    learning_rate=0.2,
     buffer_size=10000,
     learning_starts=1000,
-    batch_size=32,
+    batch_size=64,
     tau=0.1,
-    gamma=0.99,
+    gamma=0.3,
     train_freq=4,
-    target_update_interval=1000,
-    exploration_fraction=0.1,
-    exploration_final_eps=0.02,
+    target_update_interval=20,
+    exploration_fraction=0.3,
+    exploration_final_eps=0.1,
     verbose=1
 )
 
@@ -55,7 +55,7 @@ print(f"Estimated time for 1000 timesteps: {estimated_time_1000_timesteps} secon
 '''
 
 # Train the model for 1000 timesteps
-model.learn(total_timesteps=600)
+model.learn(total_timesteps=20)
 
 # Save the model
 model.save("C:/Users/alex1/Desktop/Ahmad_Stuff/Drone_Navigation/Code/Iterations/Second/Models/dqn_airsim_drone2")

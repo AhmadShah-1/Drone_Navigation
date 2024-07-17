@@ -1,6 +1,7 @@
 import airsim
 import numpy as np
 import gymnasium as gym
+from airsim import ImageRequest
 from gymnasium import spaces
 from PIL import Image
 import time
@@ -22,7 +23,7 @@ class AirSimDroneEnv(gym.Env):
         self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 3), dtype=np.uint8)
 
         self.image_request = airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True)
-        self.segmentation_request = airsim.ImageRequest("bottom_center", airsim.ImageType.Segmentation, False, False)
+        # self.segmentation_request = airsim.ImageRequest("bottom_center", airsim.ImageType.Segmentation, False, False)
         self.bottom_camera_request = airsim.ImageRequest("bottom_center", airsim.ImageType.Scene, False, False)
         self.target_position = np.array([30, 3, -10])  # Set your target position
 
@@ -30,14 +31,14 @@ class AirSimDroneEnv(gym.Env):
 
         # Object ID was not being identified correctly by the bottom camera, however it kept outputting 106, possibly referring to the color
         # of the road, so the number 106 will be compared to the bottom camera output and if True will mean the drone is over the road
-        '''
+
         # Set object ID for the road (ground)
         self.road_object_id = 42  # Set this to an appropriate ID for the road
         self.client.simSetSegmentationObjectID("Road", self.road_object_id)
         self.client.simSetSegmentationObjectID("road[\w]*", self.road_object_id, True)
         self.client.simSetSegmentationObjectID("Road[\w]*", self.road_object_id, True)
         self.client.simSetSegmentationObjectID("Road_[\w]*", self.road_object_id, True)
-        '''
+
         self.ground_not_detected_start = None  # To track when ground is not detected
 
     def reset(self, seed=None, options=None):
@@ -61,6 +62,8 @@ class AirSimDroneEnv(gym.Env):
             4: (0, 0, -1),  # up
             5: (0, 0, 1),  # down
             6: (0, 0, 0),  # hover
+            7: 'yaw_left',  # turn left in place
+            8: 'yaw_right'  # turn right in place
         }[action]
 
         self.client.moveByVelocityAsync(quad_offset[0], quad_offset[1], quad_offset[2], 5).join()
@@ -128,8 +131,62 @@ class AirSimDroneEnv(gym.Env):
         return False, "none"
 
     def _is_on_road(self):
+        responses = self.client.simGetImages(
+            [ImageRequest("bottom_center", airsim.ImageType.Segmentation, False, False)])
+        response = responses[0]
+        img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+        img2d = img1d.reshape(response.height, response.width, 3)  # reshape to 3-channel image
+
+        # Debug output for the center pixel's RGB values
+        center_pixel = img2d[response.height // 2, response.width // 2]
+
+        # Check if the road object ID (42) is in the unique IDs of any channel
+        return ([106, 31, 92] in center_pixel)
+
+    '''
+    def _is_on_road(self):
+        responses = self.client.simGetImages(
+            [ImageRequest("bottom_center", airsim.ImageType.Segmentation, False, False)])
+        response = responses[0]
+        img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+        img2d = img1d.reshape(response.height, response.width, 3)  # reshape to 3-channel image
+
+        # Debug output for the center pixel's RGB values
+        center_pixel = img2d[response.height // 2, response.width // 2]
+        print(f"Center pixel RGB values: {center_pixel}")
+
+        # Check if the object ID (42) is present in any channel
+        unique_ids_red, counts_red = np.unique(img2d[:, :, 0], return_counts=True)
+        unique_ids_green, counts_green = np.unique(img2d[:, :, 1], return_counts=True)
+        unique_ids_blue, counts_blue = np.unique(img2d[:, :, 2], return_counts=True)
+        print(f"Red channel unique IDs: {unique_ids_red}, counts: {counts_red}")
+        print(f"Green channel unique IDs: {unique_ids_green}, counts: {counts_green}")
+        print(f"Blue channel unique IDs: {unique_ids_blue}, counts: {counts_blue}")
+
+        # Check if the road object ID (42) is in the unique IDs of any channel
+        return (self.road_object_id in unique_ids_red or
+                self.road_object_id in unique_ids_green or
+                self.road_object_id in unique_ids_blue)
+
+    
+    def _is_on_road(self):
+        responses = self.client.simGetImages([ImageRequest("bottom_center", airsim.ImageType.Segmentation, False, False)])
+        response = responses[0]
+        img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)  # get numpy array
+        img_rgb = img1d.reshape(response.height, response.width, 3)  # reshape array to 3 channel image array H X W X 3
+        img_rgb = np.flipud(img_rgb)  # original image is fliped vertically
+
+        # find unique colors
+        print(np.unique(img_rgb[:, :, 0], return_counts=True))  # red
+        print(np.unique(img_rgb[:, :, 1], return_counts=True))  # green
+        print(np.unique(img_rgb[:, :, 2], return_counts=True))  # blue
+        '''
+    '''
+    def _is_on_road(self):
         responses = self.client.simGetImages([self.segmentation_request])
         response = responses[0]
+        print(responses)
+        
         img1d = np.frombuffer(response.image_data_uint8, dtype=np.uint8)
         img2d = img1d.reshape(response.height, response.width, 3)
 
@@ -138,6 +195,7 @@ class AirSimDroneEnv(gym.Env):
         print(center_pixel)
         return center_pixel[0] == 106
 
+        '''
     def render(self, mode='human'):
         # Get the bottom camera feed
         responses = self.client.simGetImages([self.bottom_camera_request])
@@ -150,12 +208,12 @@ class AirSimDroneEnv(gym.Env):
         cv2.imshow("Bottom Camera Feed", img_rgb)
         cv2.waitKey(1)
 
-'''
-# Additional code to ensure the drone takes off and shows the live feed
-if __name__ == "__main__":
-    env = AirSimDroneEnv(ip_address="127.0.0.1")
-    env.client.moveToPositionAsync(0, 0, -10, 5).join()
-    while True:
-        env.render()
-
-'''
+    '''
+    # Additional code to ensure the drone takes off and shows the live feed
+    if __name__ == "__main__":
+        env = AirSimDroneEnv(ip_address="127.0.0.1")
+        env.client.moveToPositionAsync(0, 0, -10, 5).join()
+        while True:
+            env.render()
+    
+    '''
