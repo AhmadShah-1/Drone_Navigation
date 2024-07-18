@@ -21,6 +21,6 @@ Used optuna on slow_training model to find best hyperparameters
 Surrounding Cameras:
 Training drone to use all 4 direction cameras to train it to avoid obstacles around it
 
-Passing_to_GPU:
+Passing_to_GPU (Static_location and NonStatic Location):
 Pass the images to the gpu for faster processing
 

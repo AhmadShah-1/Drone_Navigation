@@ -1,0 +1,4 @@
+Static Location contains the first iteration of code where the target location was set to 1 location and the drone had to learn to go there
+
+
+Non-Static Location is the improvement where a list of target values will be chosen to teach the agent
