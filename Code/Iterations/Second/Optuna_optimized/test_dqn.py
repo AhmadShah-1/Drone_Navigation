@@ -28,7 +28,7 @@ def test_model(model, env, target_position, episodes=10):
 env = AirSimDroneEnv(ip_address="127.0.0.1")
 
 # Load the trained model
-model_path = "C:/Users/alex1/Desktop/Ahmad_Stuff/Drone_Navigation/Code/Iterations/Second/Models/dqn_airsim_drone_optimized"
+model_path = "C:/Users/alex1/Desktop/Ahmad_Stuff/Drone_Navigation/Code/Iterations/Second/Optuna_optimized/Models/dqn_airsim_drone_100_steps.zip"
 model = DQN.load(model_path, env=env)
 
 # Define target coordinates

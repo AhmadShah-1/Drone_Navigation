@@ -4,6 +4,9 @@ An Object iD with a specified color has been assigned to ground
 The center pixel of the bottom camera is used to detect the color of the ground below it
 and checks if its still on the street or not
 
+
+Each subsequent mention of a folder is an either an improvement a different focus or both:
+
 Fast_Training and Slow_Training:
 The two directories Fast Training and Slow Training are not seperate but are meant to be used together.
 The fast_training folder rewards the drone for increasing its velocity
@@ -14,3 +17,10 @@ reach its target quicker.
 
 Optuna_optimized:
 Used optuna on slow_training model to find best hyperparameters
+
+Surrounding Cameras:
+Training drone to use all 4 direction cameras to train it to avoid obstacles around it
+
+Passing_to_GPU:
+Pass the images to the gpu for faster processing
+
