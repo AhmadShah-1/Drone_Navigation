@@ -26,3 +26,6 @@ Pass the images to the gpu for faster processing
 
 Nonstatic Location (Limited Movement):
 Limited movement is the same as the outer training files however does not contain yaw control to provide the model with curriculum learning
+
+Using_LIDAR:
+Drone takes too much time to train on images from camera, so lidar use will be explored.
